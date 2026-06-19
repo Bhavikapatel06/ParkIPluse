@@ -11,4 +11,4 @@ const violationSchema = new mongoose.Schema({
   validation_status: { type: String, default: 'Pending' }
 });
 
-module.exports = mongoose.model('Violation', violationSchema);
+module.exports = mongoose.model('Violation', violationSchema, 'violations');

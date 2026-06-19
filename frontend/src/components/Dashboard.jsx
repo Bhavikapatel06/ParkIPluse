@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { AlertTriangle, MapPin, Activity, CheckCircle, XCircle } from 'lucide-react';
 
-export default function Dashboard() {
+export default function Dashboard({ filters }) {
     const [stats, setStats] = useState({
         totalViolations: 0,
         approvedViolations: 0,
@@ -13,9 +13,16 @@ export default function Dashboard() {
     const [recommendations, setRecommendations] = useState([]);
 
     useEffect(() => {
-        axios.get('http://localhost:3000/api/dashboard').then(res => setStats(res.data)).catch(console.error);
-        axios.get('http://localhost:3000/api/recommendations').then(res => setRecommendations(res.data)).catch(console.error);
-    }, []);
+        const params = new URLSearchParams();
+        if (filters) {
+            Object.entries(filters).forEach(([k, v]) => {
+                if (v) params.append(k, v);
+            });
+        }
+        const queryString = params.toString();
+        axios.get(`http://localhost:3000/api/dashboard?${queryString}`).then(res => setStats(res.data)).catch(console.error);
+        axios.get(`http://localhost:3000/api/recommendations?${queryString}`).then(res => setRecommendations(res.data)).catch(console.error);
+    }, [filters]);
 
     return (
         <div className="p-6">
