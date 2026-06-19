@@ -8,14 +8,20 @@ const getDistinctColor = (index) => {
     return `hsl(${hue}, 80%, 55%)`;
 };
 
-export default function AnalyticsView() {
+export default function AnalyticsView({ filters }) {
     const [data, setData] = useState({ byArea: [], byVehicleType: [] });
 
     useEffect(() => {
-        axios.get('http://localhost:3000/api/analytics')
+        const params = new URLSearchParams();
+        if (filters) {
+            Object.entries(filters).forEach(([k, v]) => {
+                if (v) params.append(k, v);
+            });
+        }
+        axios.get(`http://localhost:3000/api/analytics?${params.toString()}`)
             .then(res => setData(res.data))
             .catch(console.error);
-    }, []);
+    }, [filters]);
 
     return (
         <div className="p-6">

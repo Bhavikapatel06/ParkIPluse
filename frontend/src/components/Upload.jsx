@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { UploadCloud, CheckCircle, AlertTriangle } from 'lucide-react';
 
-export default function Upload() {
+export default function Upload({ onUploadSuccess }) {
     const [file, setFile] = useState(null);
     const [status, setStatus] = useState('idle'); // idle, uploading, success, error
     const [message, setMessage] = useState('');
@@ -25,6 +25,9 @@ export default function Upload() {
             });
             setStatus('success');
             setMessage(`Successfully uploaded ${res.data.count} records.`);
+            if (onUploadSuccess) {
+                onUploadSuccess();
+            }
         } catch(err) {
             setStatus('error');
             const serverError = err.response?.data?.error || err.message;
@@ -39,7 +42,7 @@ export default function Upload() {
                  onDragOver={e => e.preventDefault()}
                  onDrop={e => { e.preventDefault(); if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); }}
             >
-                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".csv" onChange={handleFileChange} />
+                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".csv, .xlsx, .xls, text/csv, application/csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={handleFileChange} />
                 <UploadCloud className="w-16 h-16 text-slate-400 mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Drag & Drop CSV</h3>
                 <p className="text-slate-400 mb-4">or click to browse files</p>

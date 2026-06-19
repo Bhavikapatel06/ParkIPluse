@@ -36,16 +36,22 @@ function HeatmapLayer({ hotspots }) {
     );
 }
 
-export default function HeatmapView() {
+export default function HeatmapView({ filters }) {
     const [hotspots, setHotspots] = useState([]);
     // Default to Bengaluru coordinates
     const center = [12.9716, 77.5946];
 
     useEffect(() => {
-        axios.get('http://localhost:3000/api/hotspots')
+        const params = new URLSearchParams();
+        if (filters) {
+            Object.entries(filters).forEach(([k, v]) => {
+                if (v) params.append(k, v);
+            });
+        }
+        axios.get(`http://localhost:3000/api/hotspots?${params.toString()}`)
             .then(res => setHotspots(res.data.hotspots || []))
             .catch(console.error);
-    }, []);
+    }, [filters]);
 
     return (
         <div className="p-6 h-[calc(100vh-80px)] flex flex-col">

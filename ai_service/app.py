@@ -77,5 +77,107 @@ def detect_hotspots():
         
     return jsonify({'hotspots': hotspots})
 
+@app.route('/api/predict', methods=['POST'])
+def predict_congestion():
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.preprocessing import LabelEncoder
+    
+    data = request.json
+    if not data or 'history' not in data or 'target' not in data:
+        return jsonify({'error': 'History and target are required'}), 400
+        
+    history = data['history']  # List of: {'location': str, 'vehicle_type': str, 'hour': int, 'day_of_week': int, 'count': int}
+    target = data['target']    # Dict of: {'location': str, 'vehicle_type': str, 'hour': int, 'day_of_week': int}
+    
+    if not history:
+        return jsonify({'tomorrow_risk': 20, 'next_week_risk': 25})
+        
+    df = pd.DataFrame(history)
+    
+    try:
+        # Preprocessing label encoders
+        le_loc = LabelEncoder()
+        le_veh = LabelEncoder()
+        
+        all_locations = list(df['location'].unique())
+        if target['location'] not in all_locations:
+            all_locations.append(target['location'])
+        le_loc.fit(all_locations)
+        
+        all_vehicles = list(df['vehicle_type'].unique())
+        if target['vehicle_type'] not in all_vehicles:
+            all_vehicles.append(target['vehicle_type'])
+        le_veh.fit(all_vehicles)
+        
+        df['location_enc'] = le_loc.transform(df['location'])
+        df['vehicle_enc'] = le_veh.transform(df['vehicle_type'])
+        
+        X = df[['location_enc', 'vehicle_enc', 'hour', 'day_of_week']].values
+        y = df['count'].values
+        
+        # Train Random Forest Regressor
+        rf = RandomForestRegressor(n_estimators=30, random_state=42)
+        rf.fit(X, y)
+        
+        max_count = float(df['count'].max()) if len(df) > 0 else 1.0
+        if max_count == 0:
+            max_count = 1.0
+            
+        target_loc_enc = le_loc.transform([target['location']])[0]
+        target_veh_enc = le_veh.transform([target['vehicle_type']])[0]
+        target_hour = int(target['hour'])
+        
+        # Predict Tomorrow
+        tomorrow_day = (int(target['day_of_week']) + 1) % 7
+        tomorrow_features = np.array([[target_loc_enc, target_veh_enc, target_hour, tomorrow_day]])
+        tomorrow_pred = rf.predict(tomorrow_features)[0]
+        tomorrow_risk = min(100, max(0, int((tomorrow_pred / max_count) * 100)))
+        
+        # Predict Next Week
+        next_week_day = int(target['day_of_week'])
+        next_week_features = np.array([[target_loc_enc, target_veh_enc, target_hour, next_week_day]])
+        next_week_pred = rf.predict(next_week_features)[0]
+        next_week_risk = min(100, max(0, int((next_week_pred / max_count) * 100)))
+        
+        # 24-Hour Forecast (for target day)
+        hourly_forecast = []
+        for h in range(24):
+            feat = np.array([[target_loc_enc, target_veh_enc, h, int(target['day_of_week'])]])
+            pred = rf.predict(feat)[0]
+            risk = min(100, max(0, int((pred / max_count) * 100)))
+            hourly_forecast.append({'hour': f"{h:02d}:00", 'risk': risk})
+            
+        # 7-Day Risk Trend (for target hour)
+        days_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        weekly_trend = []
+        for d in range(7):
+            feat = np.array([[target_loc_enc, target_veh_enc, target_hour, d]])
+            pred = rf.predict(feat)[0]
+            risk = min(100, max(0, int((pred / max_count) * 100)))
+            weekly_trend.append({'day': days_names[d], 'risk': risk})
+            
+        # Future Hotspots (for target vehicle/hour/day)
+        future_hotspots = []
+        for loc in all_locations:
+            loc_enc = le_loc.transform([loc])[0]
+            feat = np.array([[loc_enc, target_veh_enc, target_hour, int(target['day_of_week'])]])
+            pred = rf.predict(feat)[0]
+            risk = min(100, max(0, int((pred / max_count) * 100)))
+            future_hotspots.append({'area': loc, 'risk': risk})
+            
+        future_hotspots.sort(key=lambda x: x['risk'], reverse=True)
+        top_future_hotspots = future_hotspots[:5]
+        
+        return jsonify({
+            'tomorrow_risk': tomorrow_risk,
+            'next_week_risk': next_week_risk,
+            'hourly_forecast': hourly_forecast,
+            'weekly_trend': weekly_trend,
+            'future_hotspots': top_future_hotspots
+        })
+    except Exception as e:
+        print("Prediction Error: ", str(e))
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Map, BarChart2, UploadCloud, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, Map, BarChart2, UploadCloud, ShieldAlert, Brain, Sparkles, FileText } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -16,10 +16,13 @@ export default function Sidebar() {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-blue-400 bg-clip-text text-transparent">ParkPulse AI</h1>
             </div>
             
-            <nav className="flex-1 p-4 space-y-2">
+            <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
                 <NavItem to="/" icon={<LayoutDashboard />} label="Dashboard" />
                 <NavItem to="/heatmap" icon={<Map />} label="Live Heatmap" />
                 <NavItem to="/analytics" icon={<BarChart2 />} label="Analytics" />
+                <NavItem to="/prediction" icon={<Brain />} label="Prediction" />
+                <NavItem to="/simulation" icon={<Sparkles />} label="Event Simulator" />
+                <NavItem to="/reports" icon={<FileText />} label="Reports Center" />
                 <NavItem to="/upload" icon={<UploadCloud />} label="Data Upload" />
             </nav>
             
