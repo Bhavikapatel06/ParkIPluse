@@ -104,7 +104,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
                             } catch(e) {}
                         }
 
-                        const vehicle_type = getFieldValue(data, ['vehicle_type', 'vehicle', 'vehicle_category', 'type']) || 'Unknown';
+                        const vehicle_type = (getFieldValue(data, ['vehicle_type', 'vehicle', 'vehicle_category', 'type']) || 'Unknown').trim().toUpperCase();
                         const created_datetime_str = getFieldValue(data, ['created_datetime', 'date', 'time', 'datetime', 'timestamp']);
                         const police_station = getFieldValue(data, ['police_station', 'station', 'area', 'location', 'police']) || 'Unknown';
                         const junction_name = getFieldValue(data, ['junction_name', 'junction', 'crossroad']) || 'Unknown';
@@ -172,7 +172,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
                             } catch(e) {}
                         }
 
-                        const vehicle_type = getFieldValue(data, ['vehicle_type', 'vehicle', 'vehicle_category', 'type']) || 'Unknown';
+                        const vehicle_type = (getFieldValue(data, ['vehicle_type', 'vehicle', 'vehicle_category', 'type']) || 'Unknown').trim().toUpperCase();
                         const created_datetime_str = getFieldValue(data, ['created_datetime', 'date', 'time', 'datetime', 'timestamp']);
                         const police_station = getFieldValue(data, ['police_station', 'station', 'area', 'location', 'police']) || 'Unknown';
                         const junction_name = getFieldValue(data, ['junction_name', 'junction', 'crossroad']) || 'Unknown';

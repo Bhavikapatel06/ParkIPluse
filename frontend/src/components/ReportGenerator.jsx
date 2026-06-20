@@ -194,8 +194,10 @@ export default function ReportGenerator({ filters }) {
         doc.setTextColor(textColor);
 
         if (analyticsData && analyticsData.byVehicleType && analyticsData.byVehicleType.length > 0) {
+          const total = analyticsData.byVehicleType.reduce((sum, item) => sum + (item.value || 0), 0);
           analyticsData.byVehicleType.slice(0, 6).forEach((type, index) => {
-            doc.text(`* ${type.name}: ${type.value} records`, 18, y);
+            const percentage = ((type.value / Math.max(1, total)) * 100).toFixed(1);
+            doc.text(`* ${type.name}: ${type.value.toLocaleString()} records (${percentage}%)`, 18, y);
             y += 7;
           });
         } else {
