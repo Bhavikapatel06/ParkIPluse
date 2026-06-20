@@ -11,6 +11,7 @@ import SimulationView from './components/SimulationView';
 import ReportGenerator from './components/ReportGenerator';
 import Upload from './components/Upload';
 import FilterPanel from './components/FilterPanel';
+import AdminPanel from './components/AdminPanel';
 
 function EmptyState({ title }) {
   return (
@@ -94,6 +95,7 @@ function AppContent() {
       case '/prediction': return 'Congestion Risk Prediction';
       case '/simulation': return 'Event Impact Simulator';
       case '/reports': return 'Operations Reports Center';
+      case '/admin': return 'Admin Control Panel';
       default: return 'ParkPulse AI Dashboard';
     }
   };
@@ -124,6 +126,7 @@ function AppContent() {
               <Route path="/simulation" element={<SimulationView metadata={metadata} />} />
               <Route path="/reports" element={<ReportGenerator filters={filters} />} />
               <Route path="/upload" element={<Upload onUploadSuccess={fetchMetadata} />} />
+              <Route path="/admin" element={<AdminPanel onDataCleared={() => { setMetadata({ policeStations: [], vehicleTypes: [], violationTypes: [] }); }} />} />
             </Routes>
           </>
         )}

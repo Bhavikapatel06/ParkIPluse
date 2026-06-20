@@ -15,6 +15,78 @@ app.use(express.json());
 
 const upload = multer({ dest: 'uploads/' });
 
+// Global System Logs Array (MVP implementation)
+const systemLogs = [
+  { timestamp: new Date(), level: 'INFO', message: 'System Initialized and Ready' }
+];
+
+let cachedRecommendations = null;
+
+// Simple logging middleware
+app.use((req, res, next) => {
+  if (req.method !== 'OPTIONS' && !req.path.includes('/api/admin/logs') && !req.path.includes('/api/heatmap') && !req.path.includes('/api/admin/recommendation-history')) {
+    systemLogs.unshift({ timestamp: new Date(), level: 'INFO', message: `${req.method} ${req.path} - Processing Request` });
+    if (systemLogs.length > 200) systemLogs.length = 200; // keep last 200 logs
+  }
+  next();
+});
+
+// Admin Endpoints
+app.delete('/api/admin/dataset', async (req, res) => {
+    try {
+        await Violation.deleteMany({});
+        cachedRecommendations = null; // Reset cache
+        systemLogs.unshift({ timestamp: new Date(), level: 'WARN', message: 'Admin permanently wiped violation database' });
+        res.json({ message: 'Dataset cleared' });
+    } catch(err) {
+        systemLogs.unshift({ timestamp: new Date(), level: 'ERROR', message: `Database wipe failed: ${err.message}` });
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/logs', (req, res) => {
+    res.json(systemLogs);
+});
+
+app.get('/api/admin/recommendation-history', async (req, res) => {
+    try {
+        if (!cachedRecommendations) {
+            // Generate mock history dynamically from current database only once
+            const topAreas = await Violation.aggregate([
+                { $group: { _id: "$police_station", count: { $sum: 1 }, latest: { $max: "$created_datetime" } } },
+                { $sort: { latest: -1 } },
+                { $limit: 10 }
+            ]);
+            cachedRecommendations = topAreas.map((area, i) => ({
+                id: `REC-${1042 + i}`,
+                timestamp: area.latest || new Date(),
+                location: area._id || 'Unknown',
+                action: area.count > 50 ? 'Deploy 3 Marshals & Camera' : 'Issue Warning Signage',
+                status: i % 3 === 0 ? 'Pending' : 'Executed'
+            }));
+        }
+        res.json(cachedRecommendations);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/admin/recommendation-history/:id/status', (req, res) => {
+    if (!cachedRecommendations) return res.status(404).json({ error: 'No recommendations found' });
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const rec = cachedRecommendations.find(r => r.id === id);
+    if (rec) {
+        rec.status = status;
+        systemLogs.unshift({ timestamp: new Date(), level: 'INFO', message: `Admin marked task ${id} as ${status}` });
+        if (systemLogs.length > 200) systemLogs.length = 200;
+        res.json(rec);
+    } else {
+        res.status(404).json({ error: 'Recommendation not found' });
+    }
+});
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/parkpulse')
   .then(() => console.log('MongoDB Connected'))
