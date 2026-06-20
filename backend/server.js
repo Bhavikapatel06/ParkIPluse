@@ -17,18 +17,18 @@ const upload = multer({ dest: 'uploads/' });
 
 // Global System Logs Array (MVP implementation)
 const systemLogs = [
-  { timestamp: new Date(), level: 'INFO', message: 'System Initialized and Ready' }
+    { timestamp: new Date(), level: 'INFO', message: 'System Initialized and Ready' }
 ];
 
 let cachedRecommendations = null;
 
 // Simple logging middleware
 app.use((req, res, next) => {
-  if (req.method !== 'OPTIONS' && !req.path.includes('/api/admin/logs') && !req.path.includes('/api/heatmap') && !req.path.includes('/api/admin/recommendation-history')) {
-    systemLogs.unshift({ timestamp: new Date(), level: 'INFO', message: `${req.method} ${req.path} - Processing Request` });
-    if (systemLogs.length > 200) systemLogs.length = 200; // keep last 200 logs
-  }
-  next();
+    if (req.method !== 'OPTIONS' && !req.path.includes('/api/admin/logs') && !req.path.includes('/api/heatmap') && !req.path.includes('/api/admin/recommendation-history')) {
+        systemLogs.unshift({ timestamp: new Date(), level: 'INFO', message: `${req.method} ${req.path} - Processing Request` });
+        if (systemLogs.length > 200) systemLogs.length = 200; // keep last 200 logs
+    }
+    next();
 });
 
 // Admin Endpoints
@@ -38,7 +38,7 @@ app.delete('/api/admin/dataset', async (req, res) => {
         cachedRecommendations = null; // Reset cache
         systemLogs.unshift({ timestamp: new Date(), level: 'WARN', message: 'Admin permanently wiped violation database' });
         res.json({ message: 'Dataset cleared' });
-    } catch(err) {
+    } catch (err) {
         systemLogs.unshift({ timestamp: new Date(), level: 'ERROR', message: `Database wipe failed: ${err.message}` });
         res.status(500).json({ error: err.message });
     }
@@ -75,7 +75,7 @@ app.put('/api/admin/recommendation-history/:id/status', (req, res) => {
     if (!cachedRecommendations) return res.status(404).json({ error: 'No recommendations found' });
     const { id } = req.params;
     const { status } = req.body;
-    
+
     const rec = cachedRecommendations.find(r => r.id === id);
     if (rec) {
         rec.status = status;
@@ -89,8 +89,8 @@ app.put('/api/admin/recommendation-history/:id/status', (req, res) => {
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/parkpulse')
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.log('MongoDB Connection Error: ', err));
+    .then(() => console.log('MongoDB Connected'))
+    .catch(err => console.log('MongoDB Connection Error: ', err));
 
 // Helper for flexible header matching
 function getFieldValue(data, possibleKeys) {
@@ -156,11 +156,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
             for (const data of dataRows) {
                 const latStr = getFieldValue(data, ['latitude', 'lat', 'lat_deg', 'y']);
                 const lngStr = getFieldValue(data, ['longitude', 'lng', 'lon', 'lon_deg', 'x']);
-                
+
                 if (latStr && lngStr) {
                     const latitude = parseFloat(latStr);
                     const longitude = parseFloat(lngStr);
-                    
+
                     if (!isNaN(latitude) && !isNaN(longitude)) {
                         let v_status = getFieldValue(data, ['validation_status', 'status', 'validation']);
                         if (!v_status || v_status.toLowerCase() === 'null' || v_status === '') {
@@ -173,7 +173,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
                             try {
                                 const parsed = JSON.parse(v_type);
                                 v_type = parsed[0] || 'Unknown';
-                            } catch(e) {}
+                            } catch (e) { }
                         }
 
                         const vehicle_type = (getFieldValue(data, ['vehicle_type', 'vehicle', 'vehicle_category', 'type']) || 'Unknown').trim().toUpperCase();
@@ -219,16 +219,27 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
             res.status(500).json({ error: err.message });
         }
     } else {
-        fs.createReadStream(req.file.path)
-            .pipe(csv())
-            .on('data', (data) => {
+        let totalCount = 0;
+        try {
+            await Violation.deleteMany({});
+        } catch (e) {
+            console.error("Failed to clear DB", e);
+        }
+
+        const batchSize = 10000;
+        let currentBatch = [];
+
+        try {
+            const parser = fs.createReadStream(req.file.path).pipe(csv());
+
+            for await (const data of parser) {
                 const latStr = getFieldValue(data, ['latitude', 'lat', 'lat_deg', 'y']);
                 const lngStr = getFieldValue(data, ['longitude', 'lng', 'lon', 'lon_deg', 'x']);
-                
+
                 if (latStr && lngStr) {
                     const latitude = parseFloat(latStr);
                     const longitude = parseFloat(lngStr);
-                    
+
                     if (!isNaN(latitude) && !isNaN(longitude)) {
                         let v_status = getFieldValue(data, ['validation_status', 'status', 'validation']);
                         if (!v_status || v_status.toLowerCase() === 'null' || v_status === '') {
@@ -241,7 +252,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
                             try {
                                 const parsed = JSON.parse(v_type);
                                 v_type = parsed[0] || 'Unknown';
-                            } catch(e) {}
+                            } catch (e) { }
                         }
 
                         const vehicle_type = (getFieldValue(data, ['vehicle_type', 'vehicle', 'vehicle_category', 'type']) || 'Unknown').trim().toUpperCase();
@@ -249,7 +260,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
                         const police_station = getFieldValue(data, ['police_station', 'station', 'area', 'location', 'police']) || 'Unknown';
                         const junction_name = getFieldValue(data, ['junction_name', 'junction', 'crossroad']) || 'Unknown';
 
-                        results.push({
+                        currentBatch.push({
                             latitude,
                             longitude,
                             vehicle_type,
@@ -263,31 +274,38 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
                             junction_name,
                             validation_status: v_status
                         });
-                    }
-                }
-            })
-            .on('end', async () => {
-                try {
-                    if (results.length > 0) {
-                        await Violation.deleteMany({});
-                        const chunkSize = 5000;
-                        for (let i = 0; i < results.length; i += chunkSize) {
-                            const chunk = results.slice(i, i + chunkSize);
-                            await Violation.insertMany(chunk);
+
+                        totalCount++;
+
+                        if (currentBatch.length >= batchSize) {
+                            try {
+                                await Violation.insertMany(currentBatch, { ordered: false });
+                            } catch (err) {
+                                console.error("Chunk Insert Error:", err.message);
+                            }
+                            currentBatch = []; // reset batch after insert
                         }
                     }
-                    if (fs.existsSync(req.file.path)) {
-                        fs.unlinkSync(req.file.path);
-                    }
-                    res.status(200).json({ message: 'Upload successful', count: results.length });
-                } catch (err) {
-                    console.error("CSV Upload Error: ", err);
-                    if (fs.existsSync(req.file.path)) {
-                        fs.unlinkSync(req.file.path);
-                    }
-                    res.status(500).json({ error: err.message });
                 }
-            });
+            }
+
+            // Insert remaining
+            if (currentBatch.length > 0) {
+                try {
+                    await Violation.insertMany(currentBatch, { ordered: false });
+                } catch (err) {
+                    console.error("Final Chunk Insert Error:", err.message);
+                }
+            }
+
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+            res.status(200).json({ message: 'Upload successful', count: totalCount });
+
+        } catch (err) {
+            console.error("CSV Parse/Upload Error: ", err);
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+            res.status(500).json({ error: err.message });
+        }
     }
 });
 
@@ -297,17 +315,23 @@ app.get('/api/dashboard', async (req, res) => {
         const total = await Violation.countDocuments(filter);
         const approved = await Violation.countDocuments({ ...filter, validation_status: 'Approved' });
         const rejected = await Violation.countDocuments({ ...filter, validation_status: 'Rejected' });
-        
+
         const topAreaAgg = await Violation.aggregate([
             { $match: filter },
             { $group: { _id: "$police_station", count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 1 }
+            { $sort: { count: -1 } }
         ]);
         const highestRiskArea = topAreaAgg.length > 0 && topAreaAgg[0]._id ? topAreaAgg[0]._id : "Unknown";
-        
-        const activeHotspots = total === 0 ? 0 : Math.max(5, Math.floor(total / 5000)); 
-        
+
+        let activeHotspots = 0;
+        if (total > 0) {
+            topAreaAgg.forEach(group => {
+                if ((group.count / total) * 100 >= 3) {
+                    activeHotspots++;
+                }
+            });
+        }
+
         res.json({
             totalViolations: total,
             approvedViolations: approved,
@@ -315,8 +339,8 @@ app.get('/api/dashboard', async (req, res) => {
             activeHotspots,
             highestRiskArea
         });
-    } catch(err) {
-        res.status(500).json({error: err.message});
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -325,34 +349,54 @@ app.get('/api/heatmap', async (req, res) => {
         const filter = buildFilterQuery(req);
         const violations = await Violation.find(filter, 'latitude longitude validation_status').lean();
         res.json(violations);
-    } catch(err) {
-        res.status(500).json({error: err.message});
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
 app.get('/api/hotspots', async (req, res) => {
     try {
         const filter = buildFilterQuery(req);
-        const violations = await Violation.find(filter, 'latitude longitude police_station')
-            .limit(5000)
-            .lean();
-            
-        const locations = violations.map(v => ({ 
-            lat: v.latitude, 
-            lng: v.longitude,
-            area: v.police_station || 'Unknown'
-        }));
-        
-        // Call Python AI service
-        try {
-            const aiResponse = await axios.post('http://localhost:5000/api/hotspots', { locations });
-            res.json(aiResponse.data);
-        } catch(aiErr) {
-            console.error("AI Service Error", aiErr.message);
-            res.status(500).json({ error: "Could not fetch hotspots from AI service." });
-        }
-    } catch(err) {
-        res.status(500).json({error: err.message});
+
+        const totalViolations = await Violation.countDocuments(filter);
+        if (totalViolations === 0) return res.json({ hotspots: [] });
+
+        const hotspotsAgg = await Violation.aggregate([
+            { $match: filter },
+            {
+                $group: {
+                    _id: "$police_station",
+                    count: { $sum: 1 },
+                    lat: { $avg: "$latitude" },
+                    lng: { $avg: "$longitude" }
+                }
+            }
+        ]);
+
+        const hotspots = [];
+        let idCounter = 1;
+
+        hotspotsAgg.forEach(group => {
+            const percentage = (group.count / totalViolations) * 100;
+            if (percentage >= 3) {
+                hotspots.push({
+                    id: idCounter++,
+                    lat: group.lat,
+                    lng: group.lng,
+                    count: group.count,
+                    area: group._id || 'Unknown',
+                    risk_level: percentage > 50 ? 'Critical' : 'High',
+                    risk_score: Math.min(100, Math.floor(percentage * 2))
+                });
+            }
+        });
+
+        // Sort by count descending
+        hotspots.sort((a, b) => b.count - a.count);
+
+        res.json({ hotspots });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -365,13 +409,13 @@ app.get('/api/recommendations', async (req, res) => {
             { $sort: { count: -1 } },
             { $limit: 6 }
         ]);
-        
+
         const total = await Violation.countDocuments(filter);
-        
+
         const recommendations = topAreas.map((area, index) => {
             const location = area._id || 'Unknown Region';
             const risk = Math.min(100, Math.max(30, Math.floor((area.count / (total || 1)) * 500) + 60));
-            
+
             let recText;
             if (risk > 90) {
                 recText = `Critical density: ${area.count} violations detected! Deploy 3-4 traffic marshals immediately and consider automated enforcement cameras.`;
@@ -382,10 +426,10 @@ app.get('/api/recommendations', async (req, res) => {
             }
             return { location, risk, recommendation: recText };
         });
-        
+
         res.json(recommendations);
-    } catch(err) {
-        res.status(500).json({error: err.message});
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -402,13 +446,13 @@ app.get('/api/analytics', async (req, res) => {
             { $group: { _id: "$police_station", count: { $sum: 1 } } },
             { $sort: { count: -1 } }
         ]);
-        
+
         res.json({
             byVehicleType: byVehicleType.map(x => ({ name: x._id, value: x.count })),
             byArea: byArea.map(x => ({ name: x._id, value: x.count }))
         });
-    } catch(err) {
-        res.status(500).json({error: err.message});
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -416,7 +460,7 @@ app.get('/api/analytics', async (req, res) => {
 app.post('/api/predict', async (req, res) => {
     try {
         const { location, vehicleType, hour, dayOfWeek } = req.body;
-        
+
         // Group historical data for Random Forest training in Python
         const history = await Violation.aggregate([
             {
@@ -450,7 +494,7 @@ app.post('/api/predict', async (req, res) => {
             },
             { $limit: 10000 }
         ]);
-        
+
         const payload = {
             history,
             target: {
@@ -460,10 +504,10 @@ app.post('/api/predict', async (req, res) => {
                 day_of_week: parseInt(dayOfWeek) || 1
             }
         };
-        
+
         const aiResponse = await axios.post('http://localhost:5000/api/predict', payload);
         res.json(aiResponse.data);
-    } catch(err) {
+    } catch (err) {
         console.error("Prediction Proxy Error: ", err.message);
         res.status(500).json({ error: err.message });
     }
@@ -474,16 +518,16 @@ app.get('/api/export/csv', async (req, res) => {
     try {
         const filter = buildFilterQuery(req);
         const violations = await Violation.find(filter).lean();
-        
+
         let csvContent = 'id,latitude,longitude,vehicle_type,violation_type,created_datetime,police_station,junction_name,validation_status\n';
         violations.forEach(v => {
             csvContent += `${v._id},${v.latitude},${v.longitude},"${v.vehicle_type || 'Unknown'}","${v.violation_type || 'Unknown'}",${v.created_datetime ? v.created_datetime.toISOString() : ''},"${v.police_station || 'Unknown'}","${v.junction_name || 'Unknown'}","${v.validation_status || 'Pending'}"\n`;
         });
-        
+
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename=violations_export.csv');
         res.status(200).send(csvContent);
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -499,7 +543,7 @@ app.get('/api/meta', async (req, res) => {
             vehicleTypes: vehicleTypes.filter(Boolean),
             violationTypes: violationTypes.filter(Boolean)
         });
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });

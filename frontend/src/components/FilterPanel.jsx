@@ -20,6 +20,8 @@ export default function FilterPanel({ filters, onChange, onClear, metadata }) {
           <Calendar className="w-4 h-4 text-slate-400" />
           <input 
             type="date" 
+            title="Start Date"
+            aria-label="Start Date"
             value={filters.startDate || ''} 
             onChange={(e) => handleChange('startDate', e.target.value)}
             className="bg-transparent text-sm text-white focus:outline-none cursor-pointer"
@@ -28,6 +30,8 @@ export default function FilterPanel({ filters, onChange, onClear, metadata }) {
           <span className="text-slate-500 text-xs">to</span>
           <input 
             type="date" 
+            title="End Date"
+            aria-label="End Date"
             value={filters.endDate || ''} 
             onChange={(e) => handleChange('endDate', e.target.value)}
             className="bg-transparent text-sm text-white focus:outline-none cursor-pointer"
@@ -39,6 +43,8 @@ export default function FilterPanel({ filters, onChange, onClear, metadata }) {
         <div className="flex items-center gap-2 bg-surface p-2 rounded-lg border border-slate-700">
           <MapPin className="w-4 h-4 text-slate-400" />
           <select 
+            title="Police Station Filter"
+            aria-label="Police Station Filter"
             value={filters.policeStation || ''} 
             onChange={(e) => handleChange('policeStation', e.target.value)}
             className="bg-transparent text-sm text-white focus:outline-none cursor-pointer pr-4"
@@ -54,6 +60,8 @@ export default function FilterPanel({ filters, onChange, onClear, metadata }) {
         <div className="flex items-center gap-2 bg-surface p-2 rounded-lg border border-slate-700">
           <Car className="w-4 h-4 text-slate-400" />
           <select 
+            title="Vehicle Type Filter"
+            aria-label="Vehicle Type Filter"
             value={filters.vehicleType || ''} 
             onChange={(e) => handleChange('vehicleType', e.target.value)}
             className="bg-transparent text-sm text-white focus:outline-none cursor-pointer pr-4"
@@ -69,6 +77,8 @@ export default function FilterPanel({ filters, onChange, onClear, metadata }) {
         <div className="flex items-center gap-2 bg-surface p-2 rounded-lg border border-slate-700">
           <AlertTriangle className="w-4 h-4 text-slate-400" />
           <select 
+            title="Violation Type Filter"
+            aria-label="Violation Type Filter"
             value={filters.violationType || ''} 
             onChange={(e) => handleChange('violationType', e.target.value)}
             className="bg-transparent text-sm text-white focus:outline-none cursor-pointer pr-4 max-w-[200px]"
@@ -84,6 +94,8 @@ export default function FilterPanel({ filters, onChange, onClear, metadata }) {
         <div className="flex items-center gap-2 bg-surface p-2 rounded-lg border border-slate-700">
           <Shield className="w-4 h-4 text-slate-400" />
           <select 
+            title="Risk Level Filter"
+            aria-label="Risk Level Filter"
             value={filters.riskLevel || ''} 
             onChange={(e) => handleChange('riskLevel', e.target.value)}
             className="bg-transparent text-sm text-white focus:outline-none cursor-pointer pr-4"
