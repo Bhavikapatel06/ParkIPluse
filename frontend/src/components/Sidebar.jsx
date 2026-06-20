@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Map, BarChart2, UploadCloud, ShieldAlert, Brain, Sparkles, FileText } from 'lucide-react';
+import { LayoutDashboard, Map, BarChart2, UploadCloud, ShieldAlert, Brain, Sparkles, FileText, ShieldCheck } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -24,6 +24,8 @@ export default function Sidebar() {
                 <NavItem to="/simulation" icon={<Sparkles />} label="Event Simulator" />
                 <NavItem to="/reports" icon={<FileText />} label="Reports Center" />
                 <NavItem to="/upload" icon={<UploadCloud />} label="Data Upload" />
+                <div className="pt-2 pb-1"><div className="border-t border-slate-700/50 w-full"></div></div>
+                <NavItem to="/admin" icon={<ShieldCheck />} label="Admin Panel" />
             </nav>
             
             <div className="p-4 border-t border-slate-700/50 text-xs text-slate-500 text-center">
