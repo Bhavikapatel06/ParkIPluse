@@ -349,10 +349,10 @@ app.post('/api/predict', async (req, res) => {
         const history = await Violation.aggregate([
             {
                 $project: {
-                    location: "$police_station",
-                    vehicle_type: "$vehicle_type",
-                    hour: { $hour: "$created_datetime" },
-                    day_of_week: { $dayOfWeek: "$created_datetime" }
+                    location: { $ifNull: ["$police_station", "Unknown"] },
+                    vehicle_type: { $ifNull: ["$vehicle_type", "Unknown"] },
+                    hour: { $hour: { date: "$created_datetime", timezone: "Asia/Kolkata" } },
+                    day_of_week: { $dayOfWeek: { date: "$created_datetime", timezone: "Asia/Kolkata" } }
                 }
             },
             {
