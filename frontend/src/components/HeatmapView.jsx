@@ -48,7 +48,7 @@ export default function HeatmapView({ filters }) {
                 if (v) params.append(k, v);
             });
         }
-        axios.get(`http://localhost:3000/api/hotspots?${params.toString()}`)
+        axios.get(`/api/hotspots?${params.toString()}`)
             .then(res => setHotspots(res.data.hotspots || []))
             .catch(console.error);
     }, [filters]);

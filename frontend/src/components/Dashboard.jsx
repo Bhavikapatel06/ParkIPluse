@@ -20,8 +20,8 @@ export default function Dashboard({ filters }) {
             });
         }
         const queryString = params.toString();
-        axios.get(`http://localhost:3000/api/dashboard?${queryString}`).then(res => setStats(res.data)).catch(console.error);
-        axios.get(`http://localhost:3000/api/recommendations?${queryString}`).then(res => setRecommendations(res.data)).catch(console.error);
+        axios.get(`/api/dashboard?${queryString}`).then(res => setStats(res.data)).catch(console.error);
+        axios.get(`/api/recommendations?${queryString}`).then(res => setRecommendations(res.data)).catch(console.error);
     }, [filters]);
 
     return (

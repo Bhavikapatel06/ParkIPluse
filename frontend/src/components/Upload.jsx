@@ -20,7 +20,7 @@ export default function Upload({ onUploadSuccess }) {
         formData.append('file', file);
 
         try {
-            const res = await axios.post('http://localhost:3000/api/upload', formData, {
+            const res = await axios.post('/api/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setStatus('success');

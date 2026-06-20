@@ -28,17 +28,17 @@ export default function ReportGenerator({ filters }) {
 
   useEffect(() => {
     const queryString = buildQueryString();
-    axios.get(`http://localhost:3000/api/dashboard?${queryString}`)
+    axios.get(`/api/dashboard?${queryString}`)
       .then(res => setDashboardStats(res.data))
       .catch(console.error);
-    axios.get(`http://localhost:3000/api/analytics?${queryString}`)
+    axios.get(`/api/analytics?${queryString}`)
       .then(res => setAnalyticsData(res.data))
       .catch(console.error);
   }, [filters]);
 
   const handleExportCSV = () => {
     const queryString = buildQueryString();
-    window.open(`http://localhost:3000/api/export/csv?${queryString}`, '_blank');
+    window.open(`${axios.defaults.baseURL || ''}/api/export/csv?${queryString}`, '_blank');
     triggerSuccess('CSV Export initiated successfully.');
   };
 

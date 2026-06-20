@@ -56,7 +56,7 @@ function AppContent() {
 
   const fetchMetadata = () => {
     setMetaLoading(true);
-    axios.get('http://localhost:3000/api/meta')
+    axios.get('/api/meta')
       .then(res => {
         setMetadata(res.data);
         setMetaLoading(false);

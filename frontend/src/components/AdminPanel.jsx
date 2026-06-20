@@ -11,8 +11,8 @@ export default function AdminPanel({ onDataCleared }) {
   const fetchAdminData = async () => {
     try {
       const [logsRes, historyRes] = await Promise.all([
-        axios.get('http://localhost:3000/api/admin/logs'),
-        axios.get('http://localhost:3000/api/admin/recommendation-history')
+        axios.get('/api/admin/logs'),
+        axios.get('/api/admin/recommendation-history')
       ]);
       setLogs(logsRes.data);
       setRecHistory(historyRes.data);
@@ -30,7 +30,7 @@ export default function AdminPanel({ onDataCleared }) {
   const executeDeleteDataset = async () => {
     setIsDeleting(true);
     try {
-      await axios.delete('http://localhost:3000/api/admin/dataset');
+      await axios.delete('/api/admin/dataset');
       if (onDataCleared) onDataCleared();
       fetchAdminData();
       setShowModal(false);
@@ -46,7 +46,7 @@ export default function AdminPanel({ onDataCleared }) {
     try {
       // Optimistic update
       setRecHistory(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
-      await axios.put(`http://localhost:3000/api/admin/recommendation-history/${id}/status`, { status: newStatus });
+      await axios.put(`/api/admin/recommendation-history/${id}/status`, { status: newStatus });
       fetchAdminData(); // Refresh logs
     } catch (err) {
       console.error(err);

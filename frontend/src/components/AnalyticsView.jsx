@@ -18,7 +18,7 @@ export default function AnalyticsView({ filters }) {
                 if (v) params.append(k, v);
             });
         }
-        axios.get(`http://localhost:3000/api/analytics?${params.toString()}`)
+        axios.get(`/api/analytics?${params.toString()}`)
             .then(res => setData(res.data))
             .catch(console.error);
     }, [filters]);

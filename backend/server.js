@@ -13,6 +13,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:5000';
+
 const upload = multer({ dest: 'uploads/' });
 
 // Global System Logs Array (MVP implementation)
@@ -505,7 +507,7 @@ app.post('/api/predict', async (req, res) => {
             }
         };
 
-        const aiResponse = await axios.post('http://localhost:5000/api/predict', payload);
+        const aiResponse = await axios.post(`${AI_SERVICE_URL}/api/predict`, payload);
         res.json(aiResponse.data);
     } catch (err) {
         console.error("Prediction Proxy Error: ", err.message);

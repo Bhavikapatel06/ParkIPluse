@@ -33,7 +33,7 @@ export default function PredictionView({ metadata }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.post('http://localhost:3000/api/predict', params);
+      const res = await axios.post('/api/predict', params);
       setPrediction(res.data);
     } catch(err) {
       console.error(err);

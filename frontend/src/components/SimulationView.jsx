@@ -83,7 +83,7 @@ export default function SimulationView({ metadata }) {
   }, [policeStations]);
 
   useEffect(() => {
-    axios.get('http://localhost:3000/api/analytics')
+    axios.get('/api/analytics')
       .then(res => setAnalytics(res.data))
       .catch(console.error);
   }, []);
